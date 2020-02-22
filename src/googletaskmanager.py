@@ -7,6 +7,7 @@ import pickle
 import os.path
 import os
 import time
+import datetime
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -68,15 +69,12 @@ def main():
 
     elif act == "add":
         tit = input("Title: ")
-        due = input("Due date (MM-DD-YYYY): ")
-        dueS = due.split("-")
-        dM = dueS[0]
-        dD = dueS[1]
-        dY = dueS[2]
+        date_time_str = input("Due date (MON DD YYYY  H:MMPM): ")
+        date_time_obj = datetime.datetime.strptime(date_time_str, '%b %d %Y %I:%M%p')
         add = {
             'title' : tit,
             'notes' : '',
-            'due' : dY + '-' + dM + '-' + dD + 'T00:00:00.000Z'
+            'due' : date_time_obj.isoformat() + 'Z'
         }
         result = service.tasks().insert(tasklist='@default', body=add).execute()
         if not result:
