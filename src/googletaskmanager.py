@@ -5,6 +5,9 @@ import os.path
 import os
 import time
 import datetime
+import requests, sys, webbrowser
+from selenium import webdriver
+from selenium.webdriver.support.ui import Select
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -83,6 +86,28 @@ def main():
     elif act == "remove":
         remove()
         main()
+    elif act == "scrape":
+        #testing scrape here
+        file = open("pass.txt")
+        pas = file.readline()
+        driver = webdriver.Chrome()
+
+        driver.set_page_load_timeout("10")
+        driver.get("https://www.webassign.net/ncsu/login.html")
+        driver.find_element_by_id("loginbtn").click()
+        driver.find_element_by_name("j_username").send_keys("zmgrosec")
+        driver.find_element_by_name("j_password").send_keys(pas)
+        #driver.find_element_by_id("formSubmit").click()
+        input("Press enter once you have authenticated");
+        driver.find_element_by_name("_eventId_proceed").click()
+        time.sleep(2)
+        select = Select(driver.find_element_by_id('courseSelect'))
+        for options in select.options:
+            print(options.text)
+            course()
+        #driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
+        input("Press enter to quit")
+        driver.quit()
     else:
         print("Not valid input")
         time.sleep(1)
@@ -99,6 +124,9 @@ def remove():
             exit()
     else:
         return
+
+def course():
+    #TODO Implement the scrape of each individual course.
 
 if __name__ == '__main__':
     main()
