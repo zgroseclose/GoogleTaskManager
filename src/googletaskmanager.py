@@ -15,6 +15,11 @@ from google.auth.transport.requests import Request
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/tasks']
 
+driver = None
+select = None
+currentMAUnit = None
+prefix = "AUTO:"
+
 def main():
     """Shows basic usage of the Tasks API.
     Prints the title and ID of the first 10 task lists.
@@ -40,17 +45,13 @@ def main():
 
     service = build('tasks', 'v1', credentials=creds)
 
-    # Call the Tasks API
-    #results = service.tasklists().list(maxResults=10).execute()
-    #items = results.get('items', [])
-
     os.system('cls||clear')
     print("=================================================================")
     print("|                    Zach's Task Manager                        |")
     print("=================================================================")
 
 
-    act = input("Would you like to [view] or [add] tasks? ")
+    act = input("Would you like to [view] or [add] or [autoadd] tasks? ")
 
     if act == "view":
         tasks = service.tasks().list(tasklist='@default').execute()
@@ -84,34 +85,101 @@ def main():
     elif act == "exit":
         exit()
     elif act == "remove":
+        fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
+        found = False
+        for task in fullTasks['items']:
+            if prefix in task['title']:
+                service.tasks().delete(tasklist='@default', task=task['id']).execute()
+        print("Removed all automated tasks")
+        time.sleep(1)
+        main()
+    elif act == "removeauth":
         remove()
         main()
-    elif act == "scrape":
-        #testing scrape here
+    elif act == "scrape" or act == "autoadd":
+        currentMAUnit = int(input("What unit are you on in calc? "))
         file = open("pass.txt")
         pas = file.readline()
         driver = webdriver.Chrome()
-
         driver.set_page_load_timeout("10")
         driver.get("https://www.webassign.net/ncsu/login.html")
         driver.find_element_by_id("loginbtn").click()
         driver.find_element_by_name("j_username").send_keys("zmgrosec")
         driver.find_element_by_name("j_password").send_keys(pas)
         #driver.find_element_by_id("formSubmit").click()
-        input("Press enter once you have authenticated");
-        driver.find_element_by_name("_eventId_proceed").click()
+        while True:
+            try:
+                driver.find_element_by_name("_eventId_proceed").click()
+                break
+            except Exception as e:
+                None
         time.sleep(2)
-        select = Select(driver.find_element_by_id('courseSelect'))
-        for options in select.options:
-            print(options.text)
-            course()
-        #driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
+        print("Adding Courses to Task List...")
+        numAdded = 0
+        for i in [1] + list(range(1, 4)):
+            select = Select(driver.find_element_by_id('courseSelect'))
+            select.select_by_index(i)
+            currentClass = select.first_selected_option.text.split(",")[0]
+            if currentClass == "PY 206" or currentClass == "PY 209":
+                continue
+            driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
+            assignmentList = driver.find_element_by_xpath("/html/body/form/div/main/div[6]/div[1]/div[1]/section/ul")
+            assignments = assignmentList.find_elements_by_tag_name("li")
+            for assignment in assignments:
+                assignmentName = assignment.find_element_by_xpath("a/div/span").text
+                assignmentDue = assignment.find_element_by_xpath("a/div[3]").text
+                aTS = assignmentDue.split(", ")
+                aTHMS = aTS[3].split(" ")
+                date_time_obj = datetime.datetime.strptime(aTS[1] + " " + aTS[2] + " " + aTHMS[0] + aTHMS[1], '%b %d %Y %I:%M%p')
+                titleC = currentClass + " - " + assignmentName
+                add = {
+                    'title' : prefix + currentClass + " - " + assignmentName,
+                    'notes' : '',
+                    'due' : date_time_obj.isoformat() + 'Z'
+                }
+                fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
+                found = False
+                for task in fullTasks['items']:
+                    if task['title'] == prefix + currentClass + " - " + assignmentName or task['title'] == currentClass + " - " + assignmentName:
+                        print("FOUND")
+                        found = True
+                if found or ignore(assignmentName) or ignoreMA(currentMAUnit, assignmentName):
+                    continue
+                result = service.tasks().insert(tasklist='@default', body=add).execute()
+                if not result:
+                    print('Could not add')
+                else:
+                    numAdded = numAdded + 1
+                    print("Added: " + currentClass + " - " + assignmentName)
+        #if options.text == "Select an Option":
+        #    None
+        #else:
+        #    select.select_by_visible_text(options.text)
+        #    driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
+        #    elect = Select(driver.find_element_by_id('courseSelect'))
+        #    opt = select.options
+        #    input()
+        print("Total Assignments Added: %i" % (numAdded))
         input("Press enter to quit")
         driver.quit()
+        quit()
     else:
         print("Not valid input")
         time.sleep(1)
         main()
+#================================END MAIN======================================#
+
+def ignoreMA(unit, name):
+    if name.find(".") == -1:
+        return False
+    if unit != int(name[name.find(".") - 1]):
+        return True
+    return False
+
+def ignore(name):
+    if(name == "Access to Calculus 1 (MA 141) Textbook Files"):
+        return True
+    return False
 
 def remove():
     confirm = input("Are you sure you want to remove the auth file? (YES/NO)")
@@ -124,9 +192,6 @@ def remove():
             exit()
     else:
         return
-
-def course():
-    #TODO Implement the scrape of each individual course.
 
 if __name__ == '__main__':
     main()
