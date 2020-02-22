@@ -1,7 +1,4 @@
-#Written on Google Example Code: https://github.com/gsuitedevs/python-samples/blob/master/tasks/quickstart/quickstart.py
-
-
-# [START tasks_quickstart]
+#Developed from Google examplecode: https://github.com/gsuitedevs/python-samples/blob/master/tasks/quickstart/quickstart.py
 from __future__ import print_function
 import pickle
 import os.path
@@ -83,17 +80,25 @@ def main():
             print(result['id'])
     elif act == "exit":
         exit()
+    elif act == "remove":
+        remove()
+        main()
     else:
         print("Not valid input")
         time.sleep(1)
         main()
 
-    #if not tasks:
-    #    print('No task found.')
-    #else:
-    #    print('Tasks:')
-    #    for item in tasks['items']:
-    #        print("Name: " + tasks['title'] + " Due: " + tasks['due'])
+def remove():
+    confirm = input("Are you sure you want to remove the auth file? (YES/NO)")
+    if confirm == "YES":
+        try:
+            os.remove('token.pickle')
+            exit()
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
+            exit()
+    else:
+        return
 
 if __name__ == '__main__':
     main()
