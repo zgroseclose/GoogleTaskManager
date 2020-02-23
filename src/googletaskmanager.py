@@ -172,7 +172,7 @@ def main():
         driver.quit()
         sys.exit()
     elif act == "addwolfware":
-        print("In progress...")
+        print("Not implemented")
     #Otherwise the input is not valid and the user is reprmpted
     else:
         print("Not valid input")
