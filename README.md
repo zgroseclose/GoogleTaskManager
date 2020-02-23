@@ -8,10 +8,10 @@
 
 #### TODO:
 + ~~Add scrape from WebAssign~~ **Done**
-+ Add Scrape from WolfWare (Next!)
++ Add Scrape from WolfWare (May not implement...yet) **Working**
 + ~~Work on time implementation~~ **Done**
 + Better command line usability
-+ Maybe a GUI/Web interface
++ Maybe a GUI/Web interface (Next?)
 + Add direct download for dist folder
 
 -----------------------------------------
