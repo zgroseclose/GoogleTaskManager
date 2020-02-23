@@ -23,6 +23,10 @@ currentMAUnit = None
 prefix = "AUTO:"
 
 def main():
+    if getattr(sys, 'frozen', False) :
+    # running in a bundle
+        chromedriver_path = os.path.join(sys._MEIPASS, 'chromedriver')
+
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -71,6 +75,8 @@ def main():
                 dayS = date[2].split("T")
                 day = dayS[0]
                 print("     Due: " + month + "-" + day + "-" + year)
+        input("Press enter to continue ")
+        main()
     #If the input is add, prompt for the title and due date and add it to the default list
     elif act == "add":
         tit = input("Title: ")
@@ -90,7 +96,7 @@ def main():
             print(result['id'])
     #If the input is exit, exit the program
     elif act == "exit":
-        exit()
+        sys.exit()
     #If the input is remove, remove all tasks with the prefix in the default list
     elif act == "remove":
         fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
@@ -164,7 +170,7 @@ def main():
         print("Total Assignments Added: %i" % (numAdded))
         input("Press enter to quit")
         driver.quit()
-        quit()
+        sys.exit()
     #Otherwise the input is not valid and the user is reprmpted
     else:
         print("Not valid input")
@@ -193,10 +199,10 @@ def remove():
     if confirm == "YES":
         try:
             os.remove('token.pickle')
-            exit()
+            sys.exit()
         except OSError as e:
             print("Error: %s - %s." % (e.filename, e.strerror))
-            exit()
+            sys.exit()
     else:
         return
 
