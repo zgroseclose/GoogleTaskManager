@@ -12,3 +12,16 @@
 + ~~Work on time implementation~~ **Done**
 + Better command line usability
 + Maybe a GUI/Web interface
++ Add direct download for dist folder
+
+-----------------------------------------
+
+###Instructions
+
++ Download the repo as a ZIP
++ Extract to folder
++ Create txt file that contains your unity password named "pass.txt"
+  - Password must be on first line
++ If you have python installed you can run GoogleTaskManager.py
++ Otherwise place the pass.txt file inside the dist folder
++ Run either the py file or the exe through command prompt
