@@ -56,7 +56,7 @@ def main():
     print("=================================================================")
 
     #Prompts for user input to get action
-    act = input("Would you like to [view] or [add] or [addwebassign] tasks? ")
+    act = input("Would you like to [view] or [add] or [addwebassign] or [addwolfware] tasks? ")
 
     #If user input view, get the tasks from default list and print them
     if act == "view":
@@ -170,6 +170,33 @@ def main():
         print("Total Assignments Added: %i" % (numAdded))
         input("Press enter to quit")
         driver.quit()
+        sys.exit()
+    elif act == "scrape" or act == "addwolfware":
+        file = open("pass.txt")
+        pas = file.readline()
+        driver = webdriver.Chrome()
+        driver.set_page_load_timeout("10")
+        driver.get("https://wolfware.ncsu.edu/")
+        driver.find_element_by_xpath("/html/body/div[3]/div[2]/div[1]/header/div/div/ul/li[1]/a").click()
+        time.sleep(1)
+        driver.find_element_by_name("j_username").send_keys("zmgrosec")
+        driver.find_element_by_name("j_password").send_keys(pas)
+        while True:
+            try:
+                driver.find_element_by_name("_eventId_proceed").click()
+                break
+            except Exception as e:
+                None
+        time.sleep(2)
+        driver.find_element_by_xpath("/html/body/div[3]/div[2]/div[2]/div[2]/div/div[2]/div/div/div[2]/div[20]/div[2]/div/div[2]/ul/li[1]/a").click()
+        while True:
+            try:
+                driver.find_element_by_name("_eventId_proceed").click()
+                break
+            except Exception as e:
+                None
+        driver.find_element_by_xpath("/html/body/div[2]/div[2]/div/div/section[2]/aside/section[3]/div/div/ul/li[1]/div/a").click()
+        input()
         sys.exit()
     #Otherwise the input is not valid and the user is reprmpted
     else:
