@@ -171,6 +171,8 @@ def main():
         input("Press enter to quit")
         driver.quit()
         sys.exit()
+    elif act == "addwolfware":
+        print("Not implemented")
     #Otherwise the input is not valid and the user is reprmpted
     else:
         print("Not valid input")
