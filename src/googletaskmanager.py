@@ -20,7 +20,7 @@ driver = None
 select = None
 currentMAUnit = None
 #Prefix to place infront of automaticaly added tasks, used for both adding and removeing the tasks
-prefix = "AUTO:"
+prefix = "AUTO: "
 
 def main():
     if getattr(sys, 'frozen', False) :
@@ -84,10 +84,12 @@ def main():
         date_time_obj = datetime.datetime.strptime(date_time_str, '%b %d %Y %I:%M%p')
         add = {
             'title' : tit,
-            'notes' : '',
+            'notes' : "Due @ " + date_time_str.split(" ")[-1],
             'due' : date_time_obj.isoformat() + 'Z'
         }
         result = service.tasks().insert(tasklist='@default', body=add).execute()
+        time.sleep(1)
+        main()
         #If result is empty there was an error
         if not result:
             print('Could not add')
@@ -113,6 +115,7 @@ def main():
         main()
     #If the input is addwebassign, scrape webassign for data, get all asignments for each class and add them as tasks
     elif act == "addwebassign":
+        webAssignCourses = int(input("How many WebAssign courses do you have? "))
         currentMAUnit = int(input("What unit are you on in calc? "))
         file = open("pass.txt")
         pas = file.readline()
@@ -132,7 +135,7 @@ def main():
         time.sleep(2)
         print("Adding Courses to Task List...")
         numAdded = 0
-        for i in [1] + list(range(1, 4)):
+        for i in [1] + list(range(1, webAssignCourses)):
             select = Select(driver.find_element_by_id('courseSelect'))
             select.select_by_index(i)
             currentClass = select.first_selected_option.text.split(",")[0]
@@ -150,7 +153,7 @@ def main():
                 titleC = currentClass + " - " + assignmentName
                 add = {
                     'title' : prefix + currentClass + " - " + assignmentName,
-                    'notes' : '',
+                    'notes' : 'Due @ ' + aTHMS[0] + aTHMS[1],
                     'due' : date_time_obj.isoformat() + 'Z'
                 }
                 fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
