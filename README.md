@@ -8,7 +8,7 @@
 
 #### TODO:
 + ~~Add scrape from WebAssign~~ **Done**
-+ Add Scrape from WolfWare (Next!)
++ Add Scrape from WolfWare (Next!) **Working**
 + ~~Work on time implementation~~ **Done**
 + Better command line usability
 + Maybe a GUI/Web interface
