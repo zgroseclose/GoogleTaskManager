@@ -16,7 +16,7 @@
 
 -----------------------------------------
 
-###Instructions
+### Instructions
 
 + Download the repo as a ZIP
 + Extract to folder
