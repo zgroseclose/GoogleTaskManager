@@ -7,9 +7,9 @@
 ------------------------------------------
 
 #### TODO:
-+ ~~Add scrape from WebAssign~~ **Done**
++ ~~Add scrape from WebAssign~~ **Done on Feb 22, 2020**
 + Add Scrape from WolfWare (Next!)
-+ ~~Work on time implementation~~ **Done**
++ ~~Work on time implementation~~ **Done on Feb 21, 2020**
 + Better command line usability
 + Maybe a GUI/Web interface
 + Add direct download for dist folder
