@@ -1,6 +1,7 @@
-/src/credentials.json
 /src/token.pickle
 /src/pass.txt
+src/dist/pass.txt
+src/dist/token.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -14,7 +15,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
