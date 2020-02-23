@@ -112,7 +112,7 @@ def main():
         remove()
         main()
     #If the input is addwebassign, scrape webassign for data, get all asignments for each class and add them as tasks
-    elif act == "scrape" or act == "addwebassign":
+    elif act == "addwebassign":
         currentMAUnit = int(input("What unit are you on in calc? "))
         file = open("pass.txt")
         pas = file.readline()
@@ -171,6 +171,8 @@ def main():
         input("Press enter to quit")
         driver.quit()
         sys.exit()
+    elif act == "addwolfware":
+        print("In progress...")
     #Otherwise the input is not valid and the user is reprmpted
     else:
         print("Not valid input")
