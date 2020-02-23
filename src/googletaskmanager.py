@@ -12,18 +12,17 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
-# If modifying these scopes, delete the file token.pickle.
+# Read and Write Permission for Google Tasks
 SCOPES = ['https://www.googleapis.com/auth/tasks']
 
+#Global Variables
 driver = None
 select = None
 currentMAUnit = None
+#Prefix to place infront of automaticaly added tasks, used for both adding and removeing the tasks
 prefix = "AUTO:"
 
 def main():
-    """Shows basic usage of the Tasks API.
-    Prints the title and ID of the first 10 task lists.
-    """
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -43,21 +42,26 @@ def main():
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
 
+    #Creates an API service for Google Tasks using the Credentials in the token.pickle file
     service = build('tasks', 'v1', credentials=creds)
 
+    #Clears the terminal and prints a welcome message
     os.system('cls||clear')
     print("=================================================================")
     print("|                    Zach's Task Manager                        |")
     print("=================================================================")
 
+    #Prompts for user input to get action
+    act = input("Would you like to [view] or [add] or [addwebassign] tasks? ")
 
-    act = input("Would you like to [view] or [add] or [autoadd] tasks? ")
-
+    #If user input view, get the tasks from default list and print them
     if act == "view":
+        #Retreives tasks
         tasks = service.tasks().list(tasklist='@default').execute()
-
+        #If no tasks are found print that
         if not tasks:
             print("No tasks found")
+        #Otherwise print all the tasks in the default list
         else:
             for task in tasks['items']:
                 print ("Task: " + task['title'])
@@ -67,7 +71,7 @@ def main():
                 dayS = date[2].split("T")
                 day = dayS[0]
                 print("     Due: " + month + "-" + day + "-" + year)
-
+    #If the input is add, prompt for the title and due date and add it to the default list
     elif act == "add":
         tit = input("Title: ")
         date_time_str = input("Due date (MON DD YYYY  H:MMPM): ")
@@ -78,12 +82,16 @@ def main():
             'due' : date_time_obj.isoformat() + 'Z'
         }
         result = service.tasks().insert(tasklist='@default', body=add).execute()
+        #If result is empty there was an error
         if not result:
             print('Could not add')
+        #Otherwise print the result id
         else:
             print(result['id'])
+    #If the input is exit, exit the program
     elif act == "exit":
         exit()
+    #If the input is remove, remove all tasks with the prefix in the default list
     elif act == "remove":
         fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
         found = False
@@ -93,10 +101,12 @@ def main():
         print("Removed all automated tasks")
         time.sleep(1)
         main()
+    #If the input is removeauth, remove the auth file and reprompt for authorization
     elif act == "removeauth":
         remove()
         main()
-    elif act == "scrape" or act == "autoadd":
+    #If the input is addwebassign, scrape webassign for data, get all asignments for each class and add them as tasks
+    elif act == "scrape" or act == "addwebassign":
         currentMAUnit = int(input("What unit are you on in calc? "))
         file = open("pass.txt")
         pas = file.readline()
@@ -151,24 +161,18 @@ def main():
                 else:
                     numAdded = numAdded + 1
                     print("Added: " + currentClass + " - " + assignmentName)
-        #if options.text == "Select an Option":
-        #    None
-        #else:
-        #    select.select_by_visible_text(options.text)
-        #    driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
-        #    elect = Select(driver.find_element_by_id('courseSelect'))
-        #    opt = select.options
-        #    input()
         print("Total Assignments Added: %i" % (numAdded))
         input("Press enter to quit")
         driver.quit()
         quit()
+    #Otherwise the input is not valid and the user is reprmpted
     else:
         print("Not valid input")
         time.sleep(1)
         main()
 #================================END MAIN======================================#
 
+#Method to check if the MA assignments need to be ignored, only adding assignments for current unit
 def ignoreMA(unit, name):
     if name.find(".") == -1:
         return False
@@ -176,11 +180,14 @@ def ignoreMA(unit, name):
         return True
     return False
 
+#Method to check if the assignment needs to be ignored
+#TODO: Implement a file with ignored assignments
 def ignore(name):
     if(name == "Access to Calculus 1 (MA 141) Textbook Files"):
         return True
     return False
 
+#Method to remove the auth file
 def remove():
     confirm = input("Are you sure you want to remove the auth file? (YES/NO)")
     if confirm == "YES":
@@ -195,4 +202,3 @@ def remove():
 
 if __name__ == '__main__':
     main()
-# [END tasks_quickstart]
