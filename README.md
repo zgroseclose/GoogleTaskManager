@@ -1,4 +1,4 @@
-# GoogleTaskManager
+# GoogleTaskManager (ZMGTaskManager)
 
 ------------------------------------------
 
@@ -8,10 +8,10 @@
 
 #### TODO:
 + ~~Add scrape from WebAssign~~ **Done**
-+ Add Scrape from WolfWare (May not implement...yet) **Working**
++ Add Scrape from WolfWare (Next!)
 + ~~Work on time implementation~~ **Done**
 + Better command line usability
-+ Maybe a GUI/Web interface (Next?)
++ Maybe a GUI/Web interface
 + Add direct download for dist folder
 
 -----------------------------------------
