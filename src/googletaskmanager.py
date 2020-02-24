@@ -20,7 +20,7 @@ driver = None
 select = None
 currentMAUnit = None
 #Prefix to place infront of automaticaly added tasks, used for both adding and removeing the tasks
-prefix = "AUTO:"
+prefix = "AUTO: "
 
 def main():
     if getattr(sys, 'frozen', False) :
@@ -56,7 +56,7 @@ def main():
     print("=================================================================")
 
     #Prompts for user input to get action
-    act = input("Would you like to [view] or [add] or [addwebassign] tasks? ")
+    act = input("Would you like to [view] or [add] or [addwebassign] or [addwolfware] tasks? ")
 
     #If user input view, get the tasks from default list and print them
     if act == "view":
@@ -84,10 +84,12 @@ def main():
         date_time_obj = datetime.datetime.strptime(date_time_str, '%b %d %Y %I:%M%p')
         add = {
             'title' : tit,
-            'notes' : '',
+            'notes' : "Due @ " + date_time_str.split(" ")[-1],
             'due' : date_time_obj.isoformat() + 'Z'
         }
         result = service.tasks().insert(tasklist='@default', body=add).execute()
+        time.sleep(1)
+        main()
         #If result is empty there was an error
         if not result:
             print('Could not add')
@@ -113,6 +115,7 @@ def main():
         main()
     #If the input is addwebassign, scrape webassign for data, get all asignments for each class and add them as tasks
     elif act == "addwebassign":
+        webAssignCourses = int(input("How many WebAssign courses do you have? "))
         currentMAUnit = int(input("What unit are you on in calc? "))
         file = open("pass.txt")
         pas = file.readline()
@@ -132,7 +135,7 @@ def main():
         time.sleep(2)
         print("Adding Courses to Task List...")
         numAdded = 0
-        for i in [1] + list(range(1, 4)):
+        for i in [1] + list(range(1, webAssignCourses)):
             select = Select(driver.find_element_by_id('courseSelect'))
             select.select_by_index(i)
             currentClass = select.first_selected_option.text.split(",")[0]
@@ -150,7 +153,7 @@ def main():
                 titleC = currentClass + " - " + assignmentName
                 add = {
                     'title' : prefix + currentClass + " - " + assignmentName,
-                    'notes' : '',
+                    'notes' : 'Due @ ' + aTHMS[0] + aTHMS[1],
                     'due' : date_time_obj.isoformat() + 'Z'
                 }
                 fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
@@ -170,6 +173,33 @@ def main():
         print("Total Assignments Added: %i" % (numAdded))
         input("Press enter to quit")
         driver.quit()
+        sys.exit()
+    elif act == "scrape" or act == "addwolfware":
+        file = open("pass.txt")
+        pas = file.readline()
+        driver = webdriver.Chrome()
+        driver.set_page_load_timeout("10")
+        driver.get("https://wolfware.ncsu.edu/")
+        driver.find_element_by_xpath("/html/body/div[3]/div[2]/div[1]/header/div/div/ul/li[1]/a").click()
+        time.sleep(1)
+        driver.find_element_by_name("j_username").send_keys("zmgrosec")
+        driver.find_element_by_name("j_password").send_keys(pas)
+        while True:
+            try:
+                driver.find_element_by_name("_eventId_proceed").click()
+                break
+            except Exception as e:
+                None
+        time.sleep(2)
+        driver.find_element_by_xpath("/html/body/div[3]/div[2]/div[2]/div[2]/div/div[2]/div/div/div[2]/div[20]/div[2]/div/div[2]/ul/li[1]/a").click()
+        while True:
+            try:
+                driver.find_element_by_name("_eventId_proceed").click()
+                break
+            except Exception as e:
+                None
+        driver.find_element_by_xpath("/html/body/div[2]/div[2]/div/div/section[2]/aside/section[3]/div/div/ul/li[1]/div/a").click()
+        input()
         sys.exit()
     #Otherwise the input is not valid and the user is reprmpted
     else:
