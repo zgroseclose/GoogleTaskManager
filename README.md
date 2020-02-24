@@ -1,4 +1,4 @@
-# GoogleTaskManager
+# GoogleTaskManager (ZMGTaskManager)
 
 ------------------------------------------
 
