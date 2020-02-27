@@ -120,7 +120,7 @@ def main():
     #If the input is addwebassign, scrape webassign for data, get all asignments for each class and add them as tasks
     elif act == "addwebassign":
         #Opens the password file
-        file = open("pass.txt")
+        file = open("userpass.txt")
         #Reads the first two lines, should be unity id and password (currently in plain text)
         user = file.readline()
         pas = file.readline()
