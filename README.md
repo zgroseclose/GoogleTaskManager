@@ -2,7 +2,7 @@
 ### Designed by Zach Groseclose
 #### Info:
 + [LinkedIn](https://www.linkedin.com/in/zachary-groseclose-0b6317167 "Zach's LinkedIn Profile")
-+ [Email](mailto:zmgrosec@ncsu.edu "Zach's Email")
++ [Email: zmgrosec@ncsu.edu](mailto:zmgrosec@ncsu.edu "Zach's Email")
 ------------------------------------------
 
 ### Google Task Manager is a program that will scrape data from WebAssign (potentially WolfWare also) and inport it to the default Google Task list for the current user in the default browser. It is currently a *work in progress*.
