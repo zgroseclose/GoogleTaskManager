@@ -8,6 +8,11 @@ import datetime
 import requests, sys, webbrowser
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+#from selenium.webdriver.chrome.options import Options
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -56,7 +61,7 @@ def main():
     print("=================================================================")
 
     #Prompts for user input to get action
-    act = input("Would you like to [view] or [add] or [addwebassign] or [addwolfware] tasks? ")
+    act = input("Would you like to [view] or [add] or [addwebassign] tasks? ")
 
     #If user input view, get the tasks from default list and print them
     if act == "view":
@@ -102,7 +107,6 @@ def main():
     #If the input is remove, remove all tasks with the prefix in the default list
     elif act == "remove":
         fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
-        found = False
         for task in fullTasks['items']:
             if prefix in task['title']:
                 service.tasks().delete(tasklist='@default', task=task['id']).execute()
@@ -115,106 +119,153 @@ def main():
         main()
     #If the input is addwebassign, scrape webassign for data, get all asignments for each class and add them as tasks
     elif act == "addwebassign":
-        webAssignCourses = int(input("How many WebAssign courses do you have? "))
-        currentMAUnit = int(input("What unit are you on in calc? "))
+        #Opens the password file
         file = open("pass.txt")
+        #Reads the first two lines, should be unity id and password (currently in plain text)
+        user = file.readline()
         pas = file.readline()
-        driver = webdriver.Chrome()
+        #Optionst to run selenium in "headless" mode, disabled for now.
+        #chrome_options = Options()
+        #chrome_options.add_argument("--headless")
+        #driver = webdriver.Chrome(chrome_options = chrome_options)
+        #Opens chrome in automated testing mode using provided chromedriver file
+        driver = webdriver.Chrome("resources\\chromedriver.exe")
         driver.set_page_load_timeout("10")
+        #Page to scrape data from, currently setup for ncsu webassign. This is where homework for classes are assigned.
         driver.get("https://www.webassign.net/ncsu/login.html")
+        #Finds the login button on the page and clicks it
         driver.find_element_by_id("loginbtn").click()
-        driver.find_element_by_name("j_username").send_keys("zmgrosec")
+        timeout = 10
+        #Waits for the page to load and the username and password fields are visible, otherwise catches the exception
+        try:
+            element_present = EC.presence_of_element_located((By.NAME, 'j_username'))
+            WebDriverWait(driver, timeout).until(element_present)
+        except TimeoutException:
+            print("Timed out waiting for page to load.")
+            time.sleep(2)
+            main()
+        #Uses the stored username and password values to login to webassign
+        driver.find_element_by_name("j_username").send_keys(user)
         driver.find_element_by_name("j_password").send_keys(pas)
         #driver.find_element_by_id("formSubmit").click()
+        #Waits for next page to load
         while True:
             try:
                 driver.find_element_by_name("_eventId_proceed").click()
                 break
             except Exception as e:
                 None
-        time.sleep(2)
         print("Adding Courses to Task List...")
+        #Keep track of the number of courses that were added, change and a counter
         numAdded = 0
-        for i in [1] + list(range(1, webAssignCourses)):
-            select = Select(driver.find_element_by_id('courseSelect'))
-            select.select_by_index(i)
-            currentClass = select.first_selected_option.text.split(",")[0]
-            if currentClass == "PY 206" or currentClass == "PY 209":
-                continue
-            driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
-            assignmentList = driver.find_element_by_xpath("/html/body/form/div/main/div[6]/div[1]/div[1]/section/ul")
-            assignments = assignmentList.find_elements_by_tag_name("li")
-            for assignment in assignments:
-                assignmentName = assignment.find_element_by_xpath("a/div/span").text
-                assignmentDue = assignment.find_element_by_xpath("a/div[3]").text
-                aTS = assignmentDue.split(", ")
-                aTHMS = aTS[3].split(" ")
-                date_time_obj = datetime.datetime.strptime(aTS[1] + " " + aTS[2] + " " + aTHMS[0] + aTHMS[1], '%b %d %Y %I:%M%p')
-                titleC = currentClass + " - " + assignmentName
-                add = {
-                    'title' : prefix + currentClass + " - " + assignmentName,
-                    'notes' : 'Due @ ' + aTHMS[0] + aTHMS[1],
-                    'due' : date_time_obj.isoformat() + 'Z'
-                }
-                fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
-                found = False
-                for task in fullTasks['items']:
-                    if task['title'] == prefix + currentClass + " - " + assignmentName or task['title'] == currentClass + " - " + assignmentName:
-                        print("FOUND")
-                        found = True
-                if found or ignore(assignmentName) or ignoreMA(currentMAUnit, assignmentName):
+        numChanged = 0
+        i = 1
+        #Waits for the page to load to find all the classes
+        try:
+            element_present = EC.presence_of_element_located((By.XPATH, "/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/select/optgroup/option"))
+            WebDriverWait(driver, timeout).until(element_present)
+            classesTemp = driver.find_elements_by_xpath("/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/select/optgroup/option")
+        except TimeoutException:
+            print("Timed out waiting for page to load.")
+            time.sleep(2)
+            main()
+        #List of classes in webassign
+        classes = []
+        #Adds all classes to the list, otherwise the course.text object is deprecated on page change
+        for course in classesTemp:
+            classes.append(course.text)
+        #Loops through all courses and scrapes the data and adds it to Google Taks
+        for course in classes:
+            try:
+                #Finds the course selector dropdown and selects the current course
+                select = Select(driver.find_element_by_id('courseSelect'))
+                select.select_by_visible_text(course)
+                #Gets the current class name, ignroing section and meeting days
+                currentClass = course.split(",")[0]
+                if currentClass == "PY 206" or currentClass == "PY 209":
                     continue
-                result = service.tasks().insert(tasklist='@default', body=add).execute()
-                if not result:
-                    print('Could not add')
-                else:
-                    numAdded = numAdded + 1
-                    print("Added: " + currentClass + " - " + assignmentName)
-        print("Total Assignments Added: %i" % (numAdded))
-        input("Press enter to quit")
+                #Clicks the "Go" button to navigate to the course's page
+                driver.find_element_by_xpath('/html/body/form/div/main/div[1]/div/div/div[1]/nav/div/button').click()
+                #Tries to find all assignments, if an exception occurs it is assumed there are no assignments and the program proceeds to the next class
+                try:
+                    assignmentList = driver.find_element_by_xpath("/html/body/form/div/main/div[6]/div[1]/div[1]/section/ul")
+                    assignments = assignmentList.find_elements_by_tag_name("li")
+                except Exception as e:
+                    continue
+                #For each assigment get the name and the due date and add it to Google Tasks
+                for assignment in assignments:
+                    #Tries to get the name and due date, if exception occurs it is assumed it is not an assignments
+                    #This is necessary because some teachers (physics) put test seats in as assigments
+                    try:
+                        assignmentName = assignment.find_element_by_xpath("a/div/span").text
+                        assignmentDue = assignment.find_element_by_xpath("a/div[3]").text
+                    except Exception as e:
+                        continue
+                    #Gets the assigment due date
+                    aTS = assignmentDue.split(", ")
+                    #Gets the time that the assigment is due
+                    aTHMS = aTS[3].split(" ")
+                    #Create a datetime object to format the time for Google Tasks API
+                    date_time_obj = datetime.datetime.strptime(aTS[1] + " " + aTS[2], '%b %d %Y')
+                    #Formats the task name
+                    titleC = currentClass + " - " + assignmentName
+                    #Creates a new task to be added to the Google Tasks list
+                    add = {
+                        'title' : prefix + currentClass + " - " + assignmentName,
+                        'notes' : 'Due @ ' + aTHMS[0] + aTHMS[1],
+                        'due' : date_time_obj.isoformat() + '.000Z'
+                    }
+                    #Calls the API and gets a list of all the tasks on the list for searching
+                    fullTasks = service.tasks().list(tasklist='@default', showCompleted=True, showHidden=True, maxResults=100).execute()
+                    #To booleans to store if the value is found or it needs a date time change
+                    found = False
+                    dtChange = False
+                    #Searches all tasks on the tasklist and sees if it exists or needs a datetime change
+                    for task in fullTasks['items']:
+                        if task['title'] == prefix + currentClass + " - " + assignmentName or task['title'] == currentClass + " - " + assignmentName:
+                            if task['due'] != add['due']:
+                                dtChange = True
+                            else:
+                                found = True
+                            break
+                    #If the task needs a datetime change we need to remove it and readd it
+                    if dtChange:
+                        for task in fullTasks['items']:
+                            if task['title'] == add['title']:
+                                service.tasks().delete(tasklist='@default', task=task['id']).execute()
+                    #If it is found or the assignment is ignored, skip it
+                    if found or ignore(assignmentName):
+                        continue
+                    #Otherwise call the API and add it to the task list
+                    result = service.tasks().insert(tasklist='@default', body=add).execute()
+                    #If result is nothing then it was not added correclty, otherwise print the information about the assignment
+                    if not result:
+                        print('Could not add')
+                    else:
+                        if dtChange:
+                            print("Change Date/Time: " + currentClass + " - " + assignmentName)
+                            numChanged = numChanged + 1
+                        else:
+                            print("Added: " + currentClass + " - " + assignmentName)
+                            numAdded = numAdded + 1
+                i = i + 1
+            #If an exception occurs anywhere in execution, print the message and stop execution
+            except Exception as e:
+                print(e.getMessage())
+                break
+        #Prints the number of assignmets added and number of assignments changed
+        print("Assignments Added: %i, Assignments Changed: %i" % (numAdded, numChanged))
+        #Waits for the user to hit enter to return to the main page and close chrome
+        input("Press enter to return to main page")
+        #Exits chrome
         driver.quit()
-        sys.exit()
-    elif act == "scrape" or act == "addwolfware":
-        file = open("pass.txt")
-        pas = file.readline()
-        driver = webdriver.Chrome()
-        driver.set_page_load_timeout("10")
-        driver.get("https://wolfware.ncsu.edu/")
-        driver.find_element_by_xpath("/html/body/div[3]/div[2]/div[1]/header/div/div/ul/li[1]/a").click()
-        time.sleep(1)
-        driver.find_element_by_name("j_username").send_keys("zmgrosec")
-        driver.find_element_by_name("j_password").send_keys(pas)
-        while True:
-            try:
-                driver.find_element_by_name("_eventId_proceed").click()
-                break
-            except Exception as e:
-                None
-        time.sleep(2)
-        driver.find_element_by_xpath("/html/body/div[3]/div[2]/div[2]/div[2]/div/div[2]/div/div/div[2]/div[20]/div[2]/div/div[2]/ul/li[1]/a").click()
-        while True:
-            try:
-                driver.find_element_by_name("_eventId_proceed").click()
-                break
-            except Exception as e:
-                None
-        driver.find_element_by_xpath("/html/body/div[2]/div[2]/div/div/section[2]/aside/section[3]/div/div/ul/li[1]/div/a").click()
-        input()
-        sys.exit()
+
     #Otherwise the input is not valid and the user is reprmpted
     else:
         print("Not valid input")
         time.sleep(1)
         main()
 #================================END MAIN======================================#
-
-#Method to check if the MA assignments need to be ignored, only adding assignments for current unit
-def ignoreMA(unit, name):
-    if name.find(".") == -1:
-        return False
-    if unit != int(name[name.find(".") - 1]):
-        return True
-    return False
 
 #Method to check if the assignment needs to be ignored
 #TODO: Implement a file with ignored assignments
