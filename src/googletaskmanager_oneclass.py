@@ -25,7 +25,7 @@ driver = None
 select = None
 currentMAUnit = None
 #Prefix to place infront of automaticaly added tasks, used for both adding and removeing the tasks
-prefix = ""
+prefix = "AUTO: "
 
 def main():
     if getattr(sys, 'frozen', False) :
